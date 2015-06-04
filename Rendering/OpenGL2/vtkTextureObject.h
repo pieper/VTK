@@ -339,7 +339,7 @@ public:
   // previous set values are used.
   void ResetFormatAndType();
 
-  unsigned int GetDepthTextureModeFormat(int vtktype);
+  //unsigned int GetDepthTextureModeFormat(int vtktype);
   unsigned int GetMinificationFilterMode(int vtktype);
   unsigned int GetMagnificationFilterMode(int vtktype);
   unsigned int GetWrapSMode(int vtktype);

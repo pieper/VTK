@@ -88,15 +88,6 @@ set_source_files_properties(
   vtkglBufferObject
   vtkglVBOHelper
   vtkglVertexArrayObject
-  vtkFrameBufferObject
-  vtkOpenGLGlyph3DHelper
-  vtkOpenGLGlyph3DMapper
-  vtkOpenGLShaderCache
-  vtkPixelBufferObject
-  vtkRenderbuffer
-  vtkRenderState
-  vtkTextureObject
-  vtkTextureUnitManager
   ${CMAKE_CURRENT_BINARY_DIR}/${vtk-module}ObjectFactory.cxx
   WRAP_EXCLUDE)
 
