@@ -179,6 +179,7 @@ set_source_files_properties(
 set_source_files_properties(
   vtkLightingHelper
   vtkOpenGLGL2PSHelper
+  vtkOpenGLState
   vtkgl
   vtkRenderingOpenGLObjectFactory
   WRAP_EXCLUDE
