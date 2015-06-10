@@ -7,7 +7,7 @@ http://stackoverflow.com/questions/24615455/add-glsl-shader-to-a-vtkactor-vtk-6-
 
 in Slicer superbuild tree, paste in this to test:
 
-execfile('./VTKv6/Rendering/OpenGL/Testing/Python/NoiseShaders.py')
+execfile('./VTKv6/Rendering/OpenGL/Testing/Python/DynamicShader.py')
 
 See this post about changes in the API - none of the existing
 tests seem to cover this topic from python:
@@ -19,15 +19,9 @@ http://vtk.1045678.n5.nabble.com/vtkProperty-LoadMaterial-disappeared-in-VTK-6-1
 # start with a cube that has texture coordinates named "TCoords"
 cube = vtk.vtkCubeSource()
 
-# add a random vector fields called "BrownianVectors"
-cubeWithVectors = vtk.vtkBrownianPoints()
-cubeWithVectors.SetMinimumSpeed(0)
-cubeWithVectors.SetMaximumSpeed(1)
-cubeWithVectors.SetInputConnection(cube.GetOutputPort())
-
 # create the render-related classes
 cubeMapper = vtk.vtkPolyDataMapper()
-cubeMapper.SetInputConnection( cubeWithVectors.GetOutputPort() )
+cubeMapper.SetInputConnection( cube.GetOutputPort() )
 
 cubeActor = vtk.vtkActor()
 cubeActor.SetMapper( cubeMapper )
@@ -47,15 +41,9 @@ circleTexture.SetInputConnection(textureSource.GetOutputPort())
 # a vertex shader that projects the vertex
 # and turns the random vectors into colors
 vertexShaderSource = """
-  attribute vec3 brownianVectors;
-  attribute vec2 textureCoordinates;
-  varying vec4 colorFromVertex;
-  varying vec2 textureCoordinatesFromVertex;
   void propFuncVS(void)
   {
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    colorFromVertex = vec4(normalize(brownianVectors), 0.3);
-    textureCoordinatesFromVertex = textureCoordinates;
   }
 """
 
@@ -132,7 +120,6 @@ resolution = [100.,100.]
 openGLproperty.AddShaderVariable("resolution", 2, resolution)
 openGLproperty.ShadingOn()
 
-cubeMapper.MapDataArrayToVertexAttribute("brownianVectors", "BrownianVectors", 0, -1)
 cubeMapper.MapDataArrayToVertexAttribute("textureCoordinates", "TCoords", 0, -1)
 
 # render
