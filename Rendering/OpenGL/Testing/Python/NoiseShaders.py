@@ -7,7 +7,12 @@ http://stackoverflow.com/questions/24615455/add-glsl-shader-to-a-vtkactor-vtk-6-
 
 in Slicer superbuild tree, paste in this to test:
 
-execfile('./VTKv6/Rendering/OpenGL/Testing/Python/Shaders.py')
+execfile('./VTKv6/Rendering/OpenGL/Testing/Python/NoiseShaders.py')
+
+See this post about changes in the API - none of the existing
+tests seem to cover this topic from python:
+
+http://vtk.1045678.n5.nabble.com/vtkProperty-LoadMaterial-disappeared-in-VTK-6-1-td5726066.html
 
 """
 
@@ -132,7 +137,7 @@ cubeMapper.MapDataArrayToVertexAttribute("textureCoordinates", "TCoords", 0, -1)
 
 # render
 
-for i in xrange(200):
+for i in xrange(2):
   openGLproperty.AddShaderVariable("time", 1, [1.0* i,])
   cubeActor.RotateZ(1)
   cubeActor.RotateX(1)
