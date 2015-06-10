@@ -7,104 +7,78 @@ http://stackoverflow.com/questions/24615455/add-glsl-shader-to-a-vtkactor-vtk-6-
 
 in Slicer superbuild tree, paste in this to test:
 
-execfile('./VTKv6/Rendering/OpenGL/Testing/Python/Shaders.py')
+execfile('./VTKv6/Rendering/OpenGL2/Testing/Python/Shaders.py')
 
 """
 
-# start with a cube that has texture coordinates named "TCoords"
-cube = vtk.vtkCubeSource()
+import vtk
+import vtk.test.Testing
 
-# add a random vector fields called "BrownianVectors"
-cubeWithVectors = vtk.vtkBrownianPoints()
-cubeWithVectors.SetMinimumSpeed(0)
-cubeWithVectors.SetMaximumSpeed(1)
-cubeWithVectors.SetInputConnection(cube.GetOutputPort())
+class TestShaders(vtk.test.Testing.vtkTest):
 
-# create the render-related classes
-cubeMapper = vtk.vtkPolyDataMapper()
-cubeMapper.SetInputConnection( cubeWithVectors.GetOutputPort() )
+    def testShaders(self):
 
-cubeActor = vtk.vtkActor()
-cubeActor.SetMapper( cubeMapper )
+        cube = vtk.vtkCubeSource()
 
-renderer= vtk.vtkRenderer()
-renderer.AddActor( cubeActor )
+        cubeMapper = vtk.vtkPolyDataMapper()
+        cubeMapper.SetInputConnection( cube.GetOutputPort() )
 
-renderWindow = vtk.vtkRenderWindow()
-renderWindow.AddRenderer( renderer )
+        cubeActor = vtk.vtkActor()
+        cubeActor.SetMapper( cubeMapper )
 
-# make a texture (2D circle)
-textureSource = vtk.vtkImageEllipsoidSource()
-textureSource.SetOutValue(50)
-circleTexture = vtk.vtkTexture()
-circleTexture.SetInputConnection(textureSource.GetOutputPort())
+        renderer= vtk.vtkRenderer()
+        renderer.AddActor( cubeActor )
 
-# a vertex shader that projects the vertex
-# and turns the random vectors into colors
-vertexShaderSource = """
-  attribute vec3 brownianVectors;
-  attribute vec2 textureCoordinates;
-  varying vec4 colorFromVertex;
-  varying vec2 textureCoordinatesFromVertex;
-  void propFuncVS(void)
-  {
-    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    colorFromVertex = vec4(normalize(brownianVectors), 0.3);
-    textureCoordinatesFromVertex = textureCoordinates;
-  }
-"""
+        renderWindow = vtk.vtkRenderWindow()
+        renderWindow.AddRenderer( renderer )
 
-# a fragment shader that uses the varying color and the texture
-fragmentShaderSource = """
-  uniform vec4 rgba;
-  uniform int useTexture;
-  uniform sampler2D textureUnit;
-  varying vec4 colorFromVertex;
-  varying vec2 textureCoordinatesFromVertex;
+        textureSource = vtk.vtkImageEllipsoidSource()
+        textureSource.SetOutValue(50)
+        texture = vtk.vtkTexture()
+        texture.SetInputConnection(textureSource.GetOutputPort())
 
-  void propFuncFS()
-  {
-    if(useTexture==1)
-      {
-      gl_FragColor = 0.5 * colorFromVertex +
-                     0.5 * rgba*texture2D(textureUnit,textureCoordinatesFromVertex);
-      }
-    else
-      {
-      gl_FragColor = colorFromVertex + rgba;
-      }
-  }
-"""
 
-# create the shader program
-shaderProgram = vtk.vtkShaderProgram2()
-shaderProgram.SetContext(renderWindow)
+        fragmentShaderSource = """
+        uniform vec4 rgba;
+        uniform int useTexture;
+        uniform sampler2D texture;
 
-vertexShader=vtk.vtkShader2()
-vertexShader.SetType(vtk.VTK_SHADER_TYPE_VERTEX)
-vertexShader.SetSourceCode(vertexShaderSource)
-vertexShader.SetContext(shaderProgram.GetContext())
+        void propFuncFS()
+        {
+          if(useTexture==1)
+            {
+            gl_FragColor=rgba*texture2D(texture,gl_TexCoord[0].xy);
+            }
+          else
+            {
+            gl_FragColor=rgba;
+            }
+        }
+        """
 
-fragmentShader=vtk.vtkShader2()
-fragmentShader.SetType(vtk.VTK_SHADER_TYPE_FRAGMENT)
-fragmentShader.SetSourceCode(fragmentShaderSource)
-fragmentShader.SetContext(shaderProgram.GetContext())
+        shaderProgram = vtk.vtkShaderProgram2()
+        shaderProgram.SetContext(renderWindow)
 
-shaderProgram.GetShaders().AddItem(vertexShader)
-shaderProgram.GetShaders().AddItem(fragmentShader)
+        shader=vtk.vtkShader2()
+        shader.SetType(vtk.VTK_SHADER_TYPE_FRAGMENT)
+        shader.SetSourceCode(fragmentShaderSource)
+        shader.SetContext(shaderProgram.GetContext())
 
-# associate the shader with the cube and set variables
-openGLproperty = cubeActor.GetProperty()
-openGLproperty.SetTexture(vtk.vtkProperty.VTK_TEXTURE_UNIT_1, circleTexture)
-openGLproperty.SetPropProgram(shaderProgram)
-rgba = [0., .7, .7, 1.]
-openGLproperty.AddShaderVariable("rgba", 4, rgba)
-openGLproperty.AddShaderVariable("useTexture", 1, [1,])
-openGLproperty.AddShaderVariable("textureUnit", 1, [1,])
-openGLproperty.ShadingOn()
+        shaderProgram.GetShaders().AddItem(shader)
 
-cubeMapper.MapDataArrayToVertexAttribute("brownianVectors", "BrownianVectors", 0, -1)
-cubeMapper.MapDataArrayToVertexAttribute("textureCoordinates", "TCoords", 0, -1)
 
-# render
-renderWindow.Render()
+        openGLproperty = cubeActor.GetProperty()
+        openGLproperty.SetTexture(0, texture)
+        openGLproperty.SetPropProgram(shaderProgram)
+        rgba = [0., .7, .7, 1.]
+        openGLproperty.AddShaderVariable("rgba", 4, rgba)
+        openGLproperty.AddShaderVariable("useTexture", 1, [1,])
+        openGLproperty.ShadingOn()
+
+        renderWindow.Render()
+
+        baseline = vtk.test.Testing.getAbsImagePath("Shaders.png")
+        vtk.test.Testing.compareImage(renderWindow, baseline, threshold=25)
+
+if __name__ == "__main__":
+     vtk.test.Testing.main([(TestShaders, 'test')])
